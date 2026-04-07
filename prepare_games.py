@@ -1,11 +1,17 @@
 import os
+import shutil
 import json
 import random
-import shutil
+import re
 
 SOURCE_DIR = '../simplified_scenarios'
 DEST_DIR = './games'
-GAMES_TO_SAMPLE = 10  # Ilość urozmaiconych gier, w które Ty (lub uczestnicy eksperymentu) możecie zagrać. 
+
+def get_game_properties(filename):
+    match = re.search(r'simple-(\d+)step-(\d+)targets', filename)
+    if match:
+        return int(match.group(1)), int(match.group(2))
+    return None
 
 def main():
     if os.path.exists(DEST_DIR):
@@ -13,44 +19,45 @@ def main():
     os.makedirs(DEST_DIR)
 
     all_files = [f for f in os.listdir(SOURCE_DIR) if f.endswith('.ggame.json')]
-    valid_games = []
-
-    for f in all_files:
-        path = os.path.join(SOURCE_DIR, f)
-        with open(path, 'r', encoding='utf-8') as file:
-            try:
-                data = json.load(file)
-                # Odrzucamy wszystkie pliki, którym z różnych przyczyn nie udało uformować się min. X scenariuszy
-                if len(data.get('scenarios', [])) > 0:
-                    valid_games.append((f, data))
-            except Exception as e:
-                print(f"Error reading {f}: {e}")
-
-    # Wybierz określoną losową liczbę gier do paczki webowej
-    if len(valid_games) > GAMES_TO_SAMPLE:
-        selected = random.sample(valid_games, GAMES_TO_SAMPLE)
-    else:
-        selected = valid_games
-
-    manifest = []
+    groups = {}
     
-    for filename, game_data in selected:
-        dest_path = os.path.join(DEST_DIR, filename)
-        
-        with open(dest_path, 'w', encoding='utf-8') as out_file:
-            json.dump(game_data, out_file, separators=(',', ':'))
+    for f in all_files:
+        props = get_game_properties(f)
+        if props:
+            if props not in groups:
+                groups[props] = []
+            groups[props].append(f)
             
-        manifest.append({
-            "filename": filename,
+    selected_files = []
+    # sort by steps, then targets
+    sorted_keys = sorted(groups.keys(), key=lambda k: (k[0], k[1]))
+    
+    for k in sorted_keys:
+        chosen = random.choice(groups[k])
+        selected_files.append((k, chosen))
+        
+    index_data = []
+
+    for idx, (props, f) in enumerate(selected_files):
+        src_path = os.path.join(SOURCE_DIR, f)
+        dest_path = os.path.join(DEST_DIR, f)
+        
+        shutil.copy2(src_path, dest_path)
+        
+        with open(dest_path, 'r', encoding='utf-8') as rf:
+            game_data = json.load(rf)
+            
+        index_data.append({
+            "filename": f,
+            "order": idx + 1,
             "id": game_data.get('original_game', {}).get('id'),
             "scenarios": [s['id'] for s in game_data.get('scenarios', [])]
         })
 
     with open(os.path.join(DEST_DIR, 'index.json'), 'w', encoding='utf-8') as manifest_file:
-        json.dump(manifest, manifest_file, indent=2)
+        json.dump(index_data, manifest_file, indent=2)
 
-    print(f"Pomyślnie skopiowano {len(selected)} wyselekcjonowanych scenariuszy (simplified) do {DEST_DIR}.")
-    print("Wygenerowano też plik index.json dla aplikacji.")
+    print(f"Przygotowano {len(index_data)} gier (po 1 z kazdego ukladu, posortowane od m=1 N=3 do m=3 N=15).")
 
 if __name__ == '__main__':
     main()

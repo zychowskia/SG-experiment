@@ -159,17 +159,17 @@ function TutorialScreen({ onFinish }) {
   const steps = [
     {
       title: "Na czym polega gra?",
-      text: "Jesteś Atakującym (na pomarańczowo, dół ekranu). Twoim zadaniem jest przekradnięcie się do jednego z zielonych Celów i zdobycie nagrody 🏆. Przeciwnik zaczyna u góry.",
+      text: "Jesteś Atakującym - zaczyna w wierzchołku zaznaczonym na pomarańczowo na dole ekranu. Twoim zadaniem jest przekradnięcie się do jednego z zielonych Celów. Przeciwnik (Obrońca) zaczyna u góry.",
       animMode: 'basics'
     },
     {
       title: "Obrona i Prawdopodobieństwo",
-      text: "Obrońca nie może zatrzymać Cię wszędzie naraz. Ustawił on swoje patrol i ubezpieczył ścieżki do celów z pewnym prawdopodobieństwem. Dokonaj bilansu szans! Jeżeli wejdziecie w tym samym kroku na to samo pole, zostajesz złapany (dostajesz ujemną karę).",
+      text: "Obrońca nie może zatrzymać Cię wszędzie naraz. Ustawił on swoje patrole i ubezpieczył ścieżki do celów z pewnym prawdopodobieństwem. Jeżeli wejdziecie w tym samym kroku na to samo pole, zostajesz złapany (dostajesz karę 🩸), jeśli uda Ci się dotrzeć do celu, który nie jest broniony, zdobywasz nagrodę 🏆 widoczną na grafie.",
       animMode: 'probs'
     },
     {
       title: "Twój Ruch",
-      text: "Kiedy rozpoczniesz rozgrywkę i spojrzysz na graf, sąsiadujące dostępne dla Ciebie wierzchołki podświetlą się jasnoniebieską obwódką. Klikaj je, aby przejść do nich w kolejnym kroku. Pamiętaj - wszystko polega na rachunku zysków, strat i prawdopodobieństw.",
+      text: "Kiedy rozpoczniesz rozgrywkę i spojrzysz na graf, sąsiadujące dostępne dla Ciebie wierzchołki podświetlą się jasnoniebieską obwódką. Klikaj je, aby przejść do wybranego z nich w kolejnym kroku. Gra kończy się w momencie osiągnięcia celu lub upływu dostępnego czasu. \n\nW tym przykładzie możesz osiągnąć Cel A w dwóch krokach, a Cel B w jednym kroku. Obrońca oba cele może osiągnąć w jednym kroku. Cel A jest cenniejszy (+0.90), ale też lepiej broniony (90%), cel B natomiast jest słabiej broniony (10%), mniej cenny (+0.40), ale za to z wysoką karą za bycie złapanym (-0.70). \n\nGra polega na oszacowaniu zysków, strat i prawdopodobieństw. Powodzenia!",
       animMode: 'moves'
     }
   ];
@@ -191,6 +191,8 @@ function TutorialScreen({ onFinish }) {
               <line x1="350" y1="200" x2="250" y2="155" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
               <line x1="350" y1="200" x2="550" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
 
+              <line x1="250" y1="155" x2="150" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+
               {/* Edge probabilities (shown only or animated in probs state) */}
               {['probs', 'moves'].includes(steps[step].animMode) && (
                 <>
@@ -201,19 +203,16 @@ function TutorialScreen({ onFinish }) {
                   <text x="450" y="79" fill="#fef08a" fontSize="12" fontWeight="bold" textAnchor="middle">10%</text>
                 </>
               )}
-
-              {/* Clickable Edge example in step 3 */}
-              <line x1="250" y1="155" x2="150" y2="110" stroke={steps[step].animMode === 'moves' ? "#60a5fa" : "rgba(255,255,255,0.15)"} strokeWidth={steps[step].animMode === 'moves' ? "5" : "3"} className={steps[step].animMode === 'moves' ? 'is-clickable' : ''} />
             </svg>
 
-            <div className={`t-node t-def ${steps[step].animMode === 'basics' ? 'pulse' : ''}`} style={{ top: 40, left: 350 }}>Start<br />Obr.</div>
+            <div className={`t-node t-def ${steps[step].animMode === 'basics' ? 'pulse' : ''}`} style={{ top: 40, left: 350 }}>Start<br />Obrońcy</div>
             <div className={`t-node t-att ${steps[step].animMode === 'basics' ? 'pulse-y' : ''}`} style={{ top: 200, left: 350 }}>Twój<br />Start</div>
 
-            <div className={`t-node t-target t-target-left ${steps[step].animMode === 'probs' ? 'pulse-danger' : ''}`} style={{ top: 110, left: 150 }}>
+            <div className={`t-node t-target t-target-left ${steps[step].animMode === 'probs' ? 'pulse-danger' : ''}`} style={{ top: 110, left: 150, backgroundColor: '#047857' }}>
               <div>Cel A<br /><span style={{ fontSize: '0.6em', lineHeight: '1.2' }}>🏆 +0.90<br />🩸 -0.50</span></div>
             </div>
 
-            <div className={`t-node t-target t-target-right ${steps[step].animMode === 'probs' ? 'pulse-safe' : ''}`} style={{ top: 110, left: 550 }}>
+            <div className={`t-node t-target t-target-right ${steps[step].animMode === 'probs' ? 'pulse-safe' : ''} ${steps[step].animMode === 'moves' ? 'node-reachable' : ''}`} style={{ top: 110, left: 550, backgroundColor: '#047857' }}>
               <div>Cel B<br /><span style={{ fontSize: '0.6em', lineHeight: '1.2' }}>🏆 +0.40<br />🩸 -0.70</span></div>
             </div>
 
@@ -222,7 +221,7 @@ function TutorialScreen({ onFinish }) {
           {steps[step].animMode === 'moves' && <div className="t-cursor" />}
 
         </div>
-        <p style={{ minHeight: '80px', fontSize: '1.1rem' }}>{steps[step].text}</p>
+        <p style={{ minHeight: '80px', fontSize: '1.1rem', whiteSpace: 'pre-wrap' }}>{steps[step].text}</p>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem' }}>
           <button className="btn" disabled={step === 0} onClick={() => setStep(step - 1)} style={{ background: 'rgba(255,255,255,0.1)', boxShadow: 'none' }}>Wstecz</button>
           {step < steps.length - 1 ? (
@@ -625,7 +624,7 @@ function SummaryScreen({ expPayoff, catchProb, onRestart }) {
           </div>
         </div>
 
-        <button onClick={onRestart} className="btn" style={{ padding: '1.25rem 3rem', fontSize: '1.2rem' }}>Zagraj ponownie w nowy scenariusz</button>
+        <button onClick={onRestart} className="btn" style={{ padding: '1.25rem 3rem', fontSize: '1.2rem' }}>Kolejny scenariusz</button>
       </div>
     </div>
   );
