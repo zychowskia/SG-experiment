@@ -368,8 +368,8 @@ h1, h2, h3 {
   pointer-events: none;
 }
 @keyframes cursorAnim {
-  0% { top: 210px; left: 360px; transform: scale(1); }
-  50% { top: 165px; left: 260px; transform: scale(1); }
-  60% { top: 165px; left: 260px; transform: scale(0.8); }
-  100% { top: 210px; left: 360px; transform: scale(1); }
+  0% { top: 210px; left: 310px; transform: scale(1); }
+  50% { top: 165px; left: 210px; transform: scale(1); }
+  60% { top: 165px; left: 210px; transform: scale(0.8); }
+  100% { top: 210px; left: 310px; transform: scale(1); }
 }

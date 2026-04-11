@@ -14,6 +14,10 @@ function App() {
   const [maxSteps, setMaxSteps] = useState(6);
   const [expectedPayoff, setExpectedPayoff] = useState(0);
   const [catchProbability, setCatchProbability] = useState(0);
+  const [isTimeout, setIsTimeout] = useState(false);
+
+  const [currentGameIndex, setCurrentGameIndex] = useState(0);
+  const [totalPayoffs, setTotalPayoffs] = useState(0);
 
   useEffect(() => {
     setPlayerId('P-' + Math.random().toString(36).substr(2, 9).toUpperCase());
@@ -24,10 +28,16 @@ function App() {
       .catch(err => console.error("Błąd wczytywania gier:", err));
   }, []);
 
-  const startGame = async () => {
-    if (!gamesList.length) return;
+  const onStartWelcome = async () => {
+    setCurrentGameIndex(0);
+    setTotalPayoffs(0);
+    await loadGame(0);
+  };
 
-    const gameMeta = gamesList[Math.floor(Math.random() * gamesList.length)];
+  const loadGame = async (index) => {
+    if (!gamesList.length || index >= gamesList.length) return;
+
+    const gameMeta = gamesList[index];
     const req = await fetch(`games/${gameMeta.filename}`);
     const gameData = await req.json();
 
@@ -47,6 +57,16 @@ function App() {
       setGameState('playing');
     } else {
       setGameState('tutorial');
+    }
+  };
+
+  const handleNextGame = async () => {
+    const nextIdx = currentGameIndex + 1;
+    if (nextIdx >= gamesList.length) {
+      setGameState('final-summary');
+    } else {
+      setCurrentGameIndex(nextIdx);
+      await loadGame(nextIdx);
     }
   };
 
@@ -83,19 +103,21 @@ function App() {
     }
   };
 
-  const handleFinish = (finalPath, expP, cProb) => {
+  const handleFinish = (finalPath, expP, cProb, timeout = false) => {
     const elapsedMs = Date.now() - startTime;
     setPath(finalPath);
-    setExpectedPayoff(expP);
-    setCatchProbability(cProb);
+    setExpectedPayoff(timeout ? 0 : expP);
+    setCatchProbability(timeout ? 0 : cProb);
+    setTotalPayoffs(prev => prev + (timeout ? 0 : expP));
+    setIsTimeout(timeout);
     setGameState('summary');
-    submitResults(finalPath, expP, cProb, elapsedMs);
+    submitResults(finalPath, timeout ? 0 : expP, timeout ? 0 : cProb, elapsedMs);
   };
 
   return (
     <div className="app-container">
       {gameState === 'welcome' && (
-        <WelcomeScreen onStart={startGame} disabled={!gamesList.length} />
+        <WelcomeScreen onStart={onStartWelcome} disabled={!gamesList.length} />
       )}
       {gameState === 'tutorial' && (
         <TutorialScreen onFinish={startPlaying} />
@@ -118,7 +140,14 @@ function App() {
         <SummaryScreen
           expPayoff={expectedPayoff}
           catchProb={catchProbability}
-          onRestart={startGame}
+          onRestart={handleNextGame}
+          isTimeout={isTimeout}
+        />
+      )}
+      {gameState === 'final-summary' && (
+        <FinalSummaryScreen
+          totalPayoffs={totalPayoffs}
+          count={gamesList.length}
         />
       )}
     </div>
@@ -129,9 +158,9 @@ function WelcomeScreen({ onStart, disabled }) {
   return (
     <div className="screen-container">
       <div className="card">
-        <h1>Gra Magazynowa</h1>
+        <h1>Gra magazynowa</h1>
         <p>
-          Witaj w eksperymencie. Wcielasz się w rolę <strong>Atakującego</strong>, który potajemnie przemieszcza się po korytarzach magazynu reprezentowanego przez graf. Twoim przeciwnikiem jest <strong>Obrońca</strong>.
+          Witaj w eksperymencie. Wcielasz się w rolę <strong>Atakującego</strong>, który potajemnie przemieszcza się po magazynie reprezentowanym przez graf. Twoim przeciwnikiem jest <strong>Obrońca</strong>.
         </p>
 
         <div className="instruction-list">
@@ -140,6 +169,7 @@ function WelcomeScreen({ onStart, disabled }) {
             <li><strong>Start przeciwnika:</strong> Twój przeciwnik rozpoczyna z punktu <strong>Start Obrońcy</strong>. Jesteś bezpieczny, o ile nie wejdziecie na to samo pole w tym samym kroku.</li>
             <li><strong>Cele:</strong> W magazynie rozrzucone są cele. Twoim celem jest osiągnięcie wybranego miejsca (nagroda za dotarcie). W grze wykonasz w sumie określoną z góry liczbę kroków. Obrońca przed rozpoczęciem gry przydzielił prawdopodobieństwa ochrony każdego z nich! Będą one wyświetlone na mapie.</li>
             <li><strong>Prawdopodobieństwa:</strong> Na każdej ścieżce Obrońcy znajduje się wartość % prawdopodobieństwa, że obrońca wybierze właśnie tę ścieżkę. Nie znasz dokładnych ruchów Obrońcy, a jedynie rozkład prawdopodobieństwa jego decyzji. Przeanalizuj zyski i kary oraz szanse powodzenia i wybierz najlepszą według Ciebie drogę do jednego z Celów.</li>
+            <li><strong>Limit czasu:</strong> Na analizę i wykonanie ruchów w scenariuszu masz dokładnie <strong>30 sekund</strong>. Jeżeli nie zdążysz, runda zostaje przerwana.</li>
           </ul>
         </div>
 
@@ -169,56 +199,57 @@ function TutorialScreen({ onFinish }) {
     },
     {
       title: "Twój Ruch",
-      text: "Kiedy rozpoczniesz rozgrywkę i spojrzysz na graf, sąsiadujące dostępne dla Ciebie wierzchołki podświetlą się jasnoniebieską obwódką. Klikaj je, aby przejść do wybranego z nich w kolejnym kroku. Gra kończy się w momencie osiągnięcia celu lub upływu dostępnego czasu. \n\nW tym przykładzie możesz osiągnąć Cel A w dwóch krokach, a Cel B w jednym kroku. Obrońca oba cele może osiągnąć w jednym kroku. Cel A jest cenniejszy (+0.90), ale też lepiej broniony (90%), cel B natomiast jest słabiej broniony (10%), mniej cenny (+0.40), ale za to z wysoką karą za bycie złapanym (-0.70). \n\nGra polega na oszacowaniu zysków, strat i prawdopodobieństw. Powodzenia!",
+      text: "Kiedy rozpoczniesz rozgrywkę i spojrzysz na graf, sąsiadujące dostępne dla Ciebie wierzchołki podświetlą się jasnoniebieską obwódką. Klikaj je, aby przejść do wybranego z nich w kolejnym kroku. Gra kończy się w momencie osiągnięcia celu lub upływu dostępnego czasu (masz na to dokładnie 30 sekund!). \n\nW tym przykładzie możesz osiągnąć Cel A w dwóch krokach, a Cel B w jednym kroku. Obrońca oba cele może osiągnąć w jednym kroku. Cel A jest cenniejszy (+0.90), ale też lepiej broniony (90%), cel B natomiast jest słabiej broniony (10%), mniej cenny (+0.40), ale za to z wysoką karą za bycie złapanym (-0.70). \n\nGra polega na oszacowaniu zysków, strat i prawdopodobieństw. Powodzenia!",
       animMode: 'moves'
     }
   ];
 
   return (
     <div className="screen-container">
-      <div className="card" style={{ maxWidth: '700px' }}>
+      <div className="card">
         <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', textAlign: 'center' }}>{steps[step].title}</h1>
         <div style={{ height: '240px', background: 'rgba(5, 8, 15, 0.5)', borderRadius: '15px', position: 'relative', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', marginBottom: '2rem' }}>
 
           {/* Animated SVG/CSS elements representing game states */}
-          <div className="tutorial-map">
+          <div style={{ width: '600px', height: '100%', margin: '0 auto', position: 'relative' }}>
             <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}>
               {/* Obrońca edges */}
-              <line x1="350" y1="40" x2="150" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
-              <line x1="350" y1="40" x2="550" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+              <line x1="300" y1="40" x2="100" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+              <line x1="300" y1="40" x2="500" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
 
               {/* Atakujący edges */}
-              <line x1="350" y1="200" x2="250" y2="155" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
-              <line x1="350" y1="200" x2="550" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+              <line x1="300" y1="200" x2="200" y2="155" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+              <line x1="300" y1="200" x2="500" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
 
-              <line x1="250" y1="155" x2="150" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+              <line x1="200" y1="155" x2="100" y2="110" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
 
               {/* Edge probabilities (shown only or animated in probs state) */}
               {['probs', 'moves'].includes(steps[step].animMode) && (
                 <>
-                  <rect x="230" y="65" width="40" height="20" rx="4" fill="rgba(15, 23, 42, 0.95)" stroke="rgba(255,255,255,0.1)" />
-                  <text x="250" y="79" fill="#fef08a" fontSize="12" fontWeight="bold" textAnchor="middle">90%</text>
+                  <rect x="180" y="65" width="40" height="20" rx="4" fill="rgba(15, 23, 42, 0.95)" stroke="rgba(255,255,255,0.1)" />
+                  <text x="200" y="79" fill="#fef08a" fontSize="12" fontWeight="bold" textAnchor="middle">90%</text>
 
-                  <rect x="430" y="65" width="40" height="20" rx="4" fill="rgba(15, 23, 42, 0.95)" stroke="rgba(255,255,255,0.1)" />
-                  <text x="450" y="79" fill="#fef08a" fontSize="12" fontWeight="bold" textAnchor="middle">10%</text>
+                  <rect x="380" y="65" width="40" height="20" rx="4" fill="rgba(15, 23, 42, 0.95)" stroke="rgba(255,255,255,0.1)" />
+                  <text x="400" y="79" fill="#fef08a" fontSize="12" fontWeight="bold" textAnchor="middle">10%</text>
                 </>
               )}
             </svg>
 
-            <div className={`t-node t-def ${steps[step].animMode === 'basics' ? 'pulse' : ''}`} style={{ top: 40, left: 350 }}>Start<br />Obrońcy</div>
-            <div className={`t-node t-att ${steps[step].animMode === 'basics' ? 'pulse-y' : ''}`} style={{ top: 200, left: 350 }}>Twój<br />Start</div>
+            <div className={`t-node t-def ${steps[step].animMode === 'basics' ? 'pulse' : ''}`} style={{ top: 40, left: 300 }}>Start<br />Obrońcy</div>
+            <div className={`t-node t-att ${steps[step].animMode === 'basics' ? 'pulse-y' : ''}`} style={{ top: 200, left: 300 }}>Twój<br />Start</div>
 
-            <div className={`t-node t-target t-target-left ${steps[step].animMode === 'probs' ? 'pulse-danger' : ''}`} style={{ top: 110, left: 150, backgroundColor: '#047857' }}>
+            <div className={`t-node t-target t-target-left ${steps[step].animMode === 'probs' ? 'pulse-danger' : ''}`} style={{ top: 110, left: 100, backgroundColor: '#047857' }}>
               <div>Cel A<br /><span style={{ fontSize: '0.6em', lineHeight: '1.2' }}>🏆 +0.90<br />🩸 -0.50</span></div>
             </div>
 
-            <div className={`t-node t-target t-target-right ${steps[step].animMode === 'probs' ? 'pulse-safe' : ''} ${steps[step].animMode === 'moves' ? 'node-reachable' : ''}`} style={{ top: 110, left: 550, backgroundColor: '#047857' }}>
+            <div className={`t-node t-target t-target-right ${steps[step].animMode === 'probs' ? 'pulse-safe' : ''} ${steps[step].animMode === 'moves' ? 'node-reachable' : ''}`} style={{ top: 110, left: 500, backgroundColor: '#047857' }}>
               <div>Cel B<br /><span style={{ fontSize: '0.6em', lineHeight: '1.2' }}>🏆 +0.40<br />🩸 -0.70</span></div>
             </div>
 
-            <div className={`t-node t-mid ${steps[step].animMode === 'moves' ? 'node-reachable' : ''}`} style={{ top: 155, left: 250 }}>vX</div>
+            <div className={`t-node t-mid ${steps[step].animMode === 'moves' ? 'node-reachable' : ''}`} style={{ top: 155, left: 200 }}>v1</div>
+
+            {steps[step].animMode === 'moves' && <div className="t-cursor" />}
           </div>
-          {steps[step].animMode === 'moves' && <div className="t-cursor" />}
 
         </div>
         <p style={{ minHeight: '80px', fontSize: '1.1rem', whiteSpace: 'pre-wrap' }}>{steps[step].text}</p>
@@ -238,6 +269,27 @@ function TutorialScreen({ onFinish }) {
 function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFinish }) {
   const cyRef = useRef(null);
   const containerRef = useRef(null);
+  const pathRef = useRef(path);
+  const [timeLeft, setTimeLeft] = useState(30);
+
+  useEffect(() => {
+    pathRef.current = path;
+  }, [path]);
+
+  useEffect(() => {
+    setTimeLeft(30);
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          onFinish(pathRef.current, 0, 0, true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [game, onFinish]);
 
   useEffect(() => {
     if (!containerRef.current || !game) return;
@@ -383,10 +435,10 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
             'text-valign': 'center',
             'text-halign': 'center',
             'color': '#f8fafc',
-            'font-size': '14px',
+            'font-size': '18px',
             'font-weight': '600',
-            'width': 130,
-            'height': 130,
+            'width': 140,
+            'height': 140,
             'font-family': 'Inter',
             'text-outline-color': '#000',
             'text-outline-width': '2px',
@@ -417,9 +469,9 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
         {
           selector: 'node[?isIntermediate]',
           style: {
-            'width': 70,
-            'height': 70,
-            'font-size': '13px'
+            'width': 80,
+            'height': 80,
+            'font-size': '16px'
           }
         },
         {
@@ -429,9 +481,9 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
             'border-width': 4,
             'shape': 'ellipse',
             'background-color': '#047857',
-            'font-size': '15px',
-            'width': 160,
-            'height': 160
+            'font-size': '18px',
+            'width': 180,
+            'height': 180
           }
         },
         {
@@ -462,12 +514,12 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
             'label': 'data(label)',
             'color': '#fef08a',
             'font-family': 'Inter',
-            'font-size': '16px',
+            'font-size': '28px',
             'font-weight': 'bold',
             'text-background-color': 'rgba(15, 23, 42, 0.95)',
             'text-background-opacity': 1,
             'text-background-shape': 'roundrectangle',
-            'text-background-padding': '6px',
+            'text-background-padding': '10px',
             'edge-text-rotation': 'autorotate',
             'text-border-width': 1,
             'text-border-color': 'rgba(255,255,255,0.1)'
@@ -572,6 +624,14 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
       <div className="sidebar">
         <div className="sidebar-section">
           <h2>Monitor rozgrywki</h2>
+
+          <div style={{ textAlign: 'center', background: 'rgba(0,0,0,0.4)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '2rem' }}>
+            <div style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Pozostały czas</div>
+            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: timeLeft <= 10 ? '#ef4444' : '#f8fafc', textShadow: timeLeft <= 10 ? '0 0 15px rgba(239, 68, 68, 0.8)' : 'none' }}>
+              00:{timeLeft.toString().padStart(2, '0')}
+            </div>
+          </div>
+
           <div className="stats-row"><span className="stats-label">Twój Krok:</span><span className="stats-value">{step} / {maxSteps}</span></div>
 
           <div className="path-box">
@@ -587,7 +647,7 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
             <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--text-main)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>Legenda Mapy</h3>
             <div className="legend-item"><div className="legend-color att"></div>Start Atakującego (Twój)</div>
             <div className="legend-item"><div className="legend-color def"></div>Start Obrońcy</div>
-            <div className="legend-item"><div className="legend-color target"></div>Cel strategiczny</div>
+            <div className="legend-item"><div className="legend-color target"></div>Cel</div>
             <p style={{ marginTop: '1.5rem', color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: '1.5', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
               Klikaj na wierzchołki z jasnoniebieską obwódką, aby wykonać ruch.
             </p>
@@ -595,36 +655,66 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
         </div>
       </div>
       <div className="graph-container">
-        <div id="cy" ref={containerRef}></div>
+        <div id="cy" ref={containerRef} style={{ width: '100%', height: '100%' }}></div>
       </div>
     </div>
   );
 }
 
-function SummaryScreen({ expPayoff, catchProb, onRestart }) {
+function SummaryScreen({ expPayoff, catchProb, onRestart, isTimeout }) {
   return (
     <div className="screen-container">
       <div className="card" style={{ textAlign: 'center' }}>
-        <h1>Koniec rozgrywki!</h1>
-        <p style={{ marginBottom: '0' }}>Przeanalizowaliśmy wybraną przez Ciebie ścieżkę w zestawieniu z ukrytą strategią rozkładu ochrony celów Obrońcy.</p>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '2.5rem', margin: '3rem 0' }}>
-          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem', minWidth: '220px', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Oczekiwana Wypłata</div>
-            <div style={{ fontSize: '3rem', fontWeight: 'bold', textShadow: '0 5px 15px rgba(0,0,0,0.5)', color: expPayoff >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-              {expPayoff > 0 ? "+" : ""}{expPayoff.toFixed(3)}
+        {isTimeout ? (
+          <>
+            <h1 style={{ fontSize: '3rem', marginBottom: '1rem', color: 'var(--danger)' }}>Koniec Czasu ⏳</h1>
+            <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>Niestety, nie zdążyłeś przekraść się do celu w ciągu wymaganych 30 sekund! Twój wynik to 0.</p>
+          </>
+        ) : (
+          <>
+            <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Scenariusz Ukończony</h1>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '2rem' }}>
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem' }}>
+                <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>Oczekiwana wypłata Atakującego (EUT):</div>
+                <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: expPayoff >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                  {expPayoff > 0 ? "+" : ""}{expPayoff.toFixed(3)}
+                </div>
+              </div>
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem' }}>
+                <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>Prawdopodobieństwo złapania:</div>
+                <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: 'var(--warning)' }}>
+                  {(catchProb * 100).toFixed(1)}%
+                </div>
+              </div>
             </div>
-          </div>
-
-          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem', minWidth: '220px', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Ryzyko złapania</div>
-            <div style={{ fontSize: '3rem', fontWeight: 'bold', textShadow: '0 5px 15px rgba(0,0,0,0.5)', color: catchProb > 0.5 ? 'var(--danger)' : 'var(--success)' }}>
-              {(catchProb * 100).toFixed(1)}%
-            </div>
-          </div>
-        </div>
+            <p style={{ marginBottom: '2rem', color: 'var(--text-muted)' }}>
+              Wybrana przez Ciebie ścieżka generuje taki przybliżony <br />poziom skuteczności Ataku w zderzeniu ze Strategią Obrońcy.
+            </p>
+          </>
+        )}
 
         <button onClick={onRestart} className="btn" style={{ padding: '1.25rem 3rem', fontSize: '1.2rem' }}>Kolejny scenariusz</button>
+      </div>
+    </div>
+  );
+}
+
+function FinalSummaryScreen({ totalPayoffs, count }) {
+  const average = count > 0 ? (totalPayoffs / count).toFixed(3) : 0;
+  return (
+    <div className="screen-container">
+      <div className="card" style={{ textAlign: 'center', maxWidth: '600px' }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Eksperyment Zakończony!</h1>
+        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Gratulacje, ukończyłeś wszystkie {count} przygotowanych scenariuszy.</p>
+        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem', margin: '2rem auto' }}>
+          <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Twoja ostateczna średnia oczekiwana wypłata z wszystkich scenariuszy:</div>
+          <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: average >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+            {average > 0 ? "+" : ""}{average}
+          </div>
+        </div>
+        <p style={{ fontSize: '1.1rem', marginTop: '2rem' }}>Dziękujemy bardzo za Twój czas i uczestnictwo w badaniu.</p>
+        <p style={{ fontSize: '1.1rem', marginTop: '1rem', color: 'var(--text-muted)' }}>Dane zostały pomyślnie zapisane. Możesz bezpiecznie zamknąć tę stronę.</p>
       </div>
     </div>
   );
