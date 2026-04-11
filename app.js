@@ -673,10 +673,10 @@ function SummaryScreen({ expPayoff, catchProb, onRestart, isTimeout }) {
           </>
         ) : (
           <>
-            <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Scenariusz Ukończony</h1>
+            <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Scenariusz ukończony</h1>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '2rem' }}>
               <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem' }}>
-                <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>Oczekiwana wypłata Atakującego (EUT):</div>
+                <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>Oczekiwana wypłata:</div>
                 <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: expPayoff >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                   {expPayoff > 0 ? "+" : ""}{expPayoff.toFixed(3)}
                 </div>
@@ -688,9 +688,6 @@ function SummaryScreen({ expPayoff, catchProb, onRestart, isTimeout }) {
                 </div>
               </div>
             </div>
-            <p style={{ marginBottom: '2rem', color: 'var(--text-muted)' }}>
-              Wybrana przez Ciebie ścieżka generuje taki przybliżony <br />poziom skuteczności Ataku w zderzeniu ze Strategią Obrońcy.
-            </p>
           </>
         )}
 
