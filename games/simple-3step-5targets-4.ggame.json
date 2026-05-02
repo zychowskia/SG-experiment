@@ -1,0 +1,897 @@
+{
+  "original_game": {
+    "id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+    "rounds": 3,
+    "defenderUnitCount": 1,
+    "spawn": 1,
+    "targets": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "graphConfig": {
+      "vertexCount": 19,
+      "isDirected": false,
+      "edges": [
+        {
+          "from": 6,
+          "to": 18
+        },
+        {
+          "from": 4,
+          "to": 12
+        },
+        {
+          "from": 0,
+          "to": 2
+        },
+        {
+          "from": 5,
+          "to": 16
+        },
+        {
+          "from": 17,
+          "to": 18
+        },
+        {
+          "from": 1,
+          "to": 9
+        },
+        {
+          "from": 13,
+          "to": 14
+        },
+        {
+          "from": 1,
+          "to": 15
+        },
+        {
+          "from": 3,
+          "to": 9
+        },
+        {
+          "from": 0,
+          "to": 7
+        },
+        {
+          "from": 1,
+          "to": 2
+        },
+        {
+          "from": 0,
+          "to": 10
+        },
+        {
+          "from": 1,
+          "to": 11
+        },
+        {
+          "from": 0,
+          "to": 13
+        },
+        {
+          "from": 1,
+          "to": 17
+        },
+        {
+          "from": 15,
+          "to": 16
+        },
+        {
+          "from": 4,
+          "to": 10
+        },
+        {
+          "from": 3,
+          "to": 8
+        },
+        {
+          "from": 5,
+          "to": 14
+        },
+        {
+          "from": 0,
+          "to": 6
+        },
+        {
+          "from": 11,
+          "to": 12
+        },
+        {
+          "from": 7,
+          "to": 8
+        }
+      ]
+    },
+    "targetAttackerRewards": [
+      0.62,
+      0.38,
+      0.69,
+      0.47,
+      0.93
+    ],
+    "targetDefenderPenalties": [
+      -0.74,
+      -0.39,
+      -0.92,
+      -1.0,
+      -0.55
+    ],
+    "vertexAttackerPenalties": [
+      -0.49,
+      -0.52,
+      -0.85,
+      -0.89,
+      -0.67,
+      -0.47,
+      -0.48,
+      -0.48,
+      -0.78,
+      -0.79,
+      -0.74,
+      -0.51,
+      -0.14,
+      -0.74,
+      -0.82,
+      -0.86,
+      -0.92,
+      -0.53,
+      -0.28
+    ],
+    "vertexDefenderRewards": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_1",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.2236878838477289,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.29607830221810477,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.06777289277591331,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.17030145095994648,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.24215947019830664,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            11,
+            12,
+            4
+          ],
+          "eu_rational": 0.5978288658247579
+        },
+        "PT": {
+          "path": [
+            1,
+            17,
+            18,
+            6
+          ],
+          "eu_subjective": 0.5823098008835091,
+          "eu_rational": 0.5885551470203878
+        }
+      }
+    },
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_2",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.04613140446794651,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.2741026179903379,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.26758019063008476,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.10149172102272679,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.310694065888904,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            1,
+            1,
+            2
+          ],
+          "eu_rational": 0.5521868354321187
+        },
+        "PT": {
+          "path": [
+            1,
+            9,
+            3,
+            3
+          ],
+          "eu_subjective": 0.5298257568885376,
+          "eu_rational": 0.38
+        }
+      }
+    },
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_3",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.04905737183270336,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.21071767476165357,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.14903636723865757,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.2508128425955497,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.3403757435714359,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            1,
+            1,
+            2
+          ],
+          "eu_rational": 0.5478856634059261
+        },
+        "PT": {
+          "path": [
+            1,
+            9,
+            3,
+            3
+          ],
+          "eu_subjective": 0.5348132127230887,
+          "eu_rational": 0.38000000000000006
+        }
+      }
+    },
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_4",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.06786105041774221,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.24251244317098755,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.28672252609235216,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.11897196753996156,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.2839320127789566,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            17,
+            18,
+            6
+          ],
+          "eu_rational": 0.5296558619816712
+        },
+        "PT": {
+          "path": [
+            1,
+            9,
+            3,
+            3
+          ],
+          "eu_subjective": 0.5385353800790019,
+          "eu_rational": 0.38000000000000006
+        }
+      }
+    },
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_5",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.16930973282643902,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.3127743028346345,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.15180263666547078,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.040096146168720107,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.3260171815047356,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            11,
+            12,
+            4
+          ],
+          "eu_rational": 0.48354841413495964
+        },
+        "PT": {
+          "path": [
+            1,
+            9,
+            3,
+            3
+          ],
+          "eu_subjective": 0.5300990523463803,
+          "eu_rational": 0.38
+        }
+      }
+    },
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_6",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.06525001485303891,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.2948220453407192,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.11681645324466801,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.18379392798092287,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.339317558580651,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            11,
+            12,
+            4
+          ],
+          "eu_rational": 0.5311296235872515
+        },
+        "PT": {
+          "path": [
+            1,
+            9,
+            3,
+            3
+          ],
+          "eu_subjective": 0.5354213923288328,
+          "eu_rational": 0.38
+        }
+      }
+    },
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_7",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.25328261157393356,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.031049318805286562,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.10867753301234481,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.29907909621479606,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.30791144039363905,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            11,
+            12,
+            4
+          ],
+          "eu_rational": 0.5421985551032111
+        },
+        "PT": {
+          "path": [
+            1,
+            9,
+            3,
+            3
+          ],
+          "eu_subjective": 0.5244820668879167,
+          "eu_rational": 0.38
+        }
+      }
+    },
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_8",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.136104656123496,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.262172732286592,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.10297385257955982,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.18542943924277686,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.3133193197675754,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            11,
+            12,
+            4
+          ],
+          "eu_rational": 0.5499555604917986
+        },
+        "PT": {
+          "path": [
+            1,
+            9,
+            3,
+            3
+          ],
+          "eu_subjective": 0.5453037616244716,
+          "eu_rational": 0.37999999999999995
+        }
+      }
+    },
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_9",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.1966142198582054,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.15447127999350044,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.09989642177368305,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.2541208306765953,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.2948972476980159,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            11,
+            12,
+            4
+          ],
+          "eu_rational": 0.5541408663877911
+        },
+        "PT": {
+          "path": [
+            1,
+            9,
+            3,
+            3
+          ],
+          "eu_subjective": 0.5469271737223736,
+          "eu_rational": 0.38
+        }
+      }
+    },
+    {
+      "id": "simple-3step-5targets-4.ggame_scen_10",
+      "game_id": "058c7e4a-3c61-4d2e-8c12-204f151cf5ff",
+      "filename": "simple-3step-5targets-4.ggame",
+      "defender_strategy": [
+        {
+          "prob": 0.22646143482978212,
+          "path": [
+            0,
+            2,
+            2,
+            2
+          ]
+        },
+        {
+          "prob": 0.04371744511178748,
+          "path": [
+            0,
+            7,
+            8,
+            3
+          ]
+        },
+        {
+          "prob": 0.2953874500218511,
+          "path": [
+            0,
+            10,
+            4,
+            4
+          ]
+        },
+        {
+          "prob": 0.14308182345207426,
+          "path": [
+            0,
+            13,
+            14,
+            5
+          ]
+        },
+        {
+          "prob": 0.2913518465845051,
+          "path": [
+            0,
+            6,
+            6,
+            6
+          ]
+        }
+      ],
+      "solutions": {
+        "Rational": {
+          "path": [
+            1,
+            17,
+            18,
+            6
+          ],
+          "eu_rational": 0.5191938963158478
+        },
+        "PT": {
+          "path": [
+            1,
+            9,
+            3,
+            3
+          ],
+          "eu_subjective": 0.533380106037894,
+          "eu_rational": 0.38
+        }
+      }
+    }
+  ]
+}

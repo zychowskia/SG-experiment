@@ -22,6 +22,11 @@ def main():
     groups = {}
     
     for f in all_files:
+        with open(os.path.join(SOURCE_DIR, f), 'r', encoding='utf-8') as rf:
+            gdata = json.load(rf)
+            if len(gdata.get('scenarios', [])) == 0:
+                continue
+
         props = get_game_properties(f)
         if props:
             if props not in groups:

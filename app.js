@@ -18,10 +18,9 @@ function App() {
 
   const [currentGameIndex, setCurrentGameIndex] = useState(0);
   const [totalPayoffs, setTotalPayoffs] = useState(0);
+  const [totalOptimalPayoffs, setTotalOptimalPayoffs] = useState(0);
 
   useEffect(() => {
-    setPlayerId('P-' + Math.random().toString(36).substr(2, 9).toUpperCase());
-
     fetch('games/index.json')
       .then(r => r.json())
       .then(data => setGamesList(data))
@@ -31,6 +30,7 @@ function App() {
   const onStartWelcome = async () => {
     setCurrentGameIndex(0);
     setTotalPayoffs(0);
+    setTotalOptimalPayoffs(0);
     await loadGame(0);
   };
 
@@ -89,7 +89,7 @@ function App() {
 
     console.log("Wysyłanie wyników do Google Sheets...", payload);
     try {
-      await fetch("https://script.google.com/macros/s/AKfycbydRp6TFdXdK2_YBHavr5ijzRNoCpeOuwvTGNzMwOCs9ZuxN0F1LR0fW2m914gNcdtD/exec", {
+      await fetch("https://script.google.com/macros/s/AKfycbzARF05A1fgmU14KC4yRRhzFH9Rk3M4LgVK5gxNVubueMh4DP2kveVhB38D9syT1wi3/exec", {
         method: "POST",
         mode: "no-cors",
         headers: {
@@ -109,6 +109,10 @@ function App() {
     setExpectedPayoff(timeout ? 0 : expP);
     setCatchProbability(timeout ? 0 : cProb);
     setTotalPayoffs(prev => prev + (timeout ? 0 : expP));
+
+    const optP = currentScenario && currentScenario.solutions && currentScenario.solutions.Rational ? currentScenario.solutions.Rational.eu_rational : 0;
+    setTotalOptimalPayoffs(prev => prev + optP);
+
     setIsTimeout(timeout);
     setGameState('summary');
     submitResults(finalPath, timeout ? 0 : expP, timeout ? 0 : cProb, elapsedMs);
@@ -117,7 +121,10 @@ function App() {
   return (
     <div className="app-container">
       {gameState === 'welcome' && (
-        <WelcomeScreen onStart={onStartWelcome} disabled={!gamesList.length} />
+        <WelcomeScreen onStart={(nickname) => {
+          setPlayerId(nickname);
+          onStartWelcome();
+        }} disabled={!gamesList.length} gamesCount={gamesList.length} />
       )}
       {gameState === 'tutorial' && (
         <TutorialScreen onFinish={startPlaying} />
@@ -134,12 +141,19 @@ function App() {
             setStep(newPath.length - 1);
           }}
           onFinish={handleFinish}
+          currentGameIndex={currentGameIndex}
+          totalGames={gamesList.length}
+          totalPayoffs={totalPayoffs}
+          totalOptimalPayoffs={totalOptimalPayoffs}
         />
       )}
       {gameState === 'summary' && (
         <SummaryScreen
           expPayoff={expectedPayoff}
+          optPayoff={currentScenario && currentScenario.solutions && currentScenario.solutions.Rational ? currentScenario.solutions.Rational.eu_rational : 0}
           catchProb={catchProbability}
+          totalPayoffs={totalPayoffs}
+          totalOptimalPayoffs={totalOptimalPayoffs}
           onRestart={handleNextGame}
           isTimeout={isTimeout}
         />
@@ -147,34 +161,47 @@ function App() {
       {gameState === 'final-summary' && (
         <FinalSummaryScreen
           totalPayoffs={totalPayoffs}
+          totalOptimalPayoffs={totalOptimalPayoffs}
           count={gamesList.length}
+          playerId={playerId}
         />
       )}
     </div>
   );
 }
 
-function WelcomeScreen({ onStart, disabled }) {
+function WelcomeScreen({ onStart, disabled, gamesCount }) {
+  const [nickname, setNickname] = useState('');
+
   return (
     <div className="screen-container">
       <div className="card">
-        <h1>Gra magazynowa</h1>
+        <h1>Gry Obronne</h1>
         <p>
-          Witaj w eksperymencie. Wcielasz się w rolę <strong>Atakującego</strong>, który potajemnie przemieszcza się po magazynie reprezentowanym przez graf. Twoim przeciwnikiem jest <strong>Obrońca</strong>.
+          Witaj w eksperymencie. Przed Tobą <strong>{gamesCount}</strong> zadań. Wcielasz się w rolę <strong>Atakującego</strong>, który potajemnie przemieszcza się po polu gry reprezentowanym przez graf. Twoim przeciwnikiem jest <strong>Obrońca</strong>.
         </p>
 
         <div className="instruction-list">
           <ul>
-            <li><strong>Twój start:</strong> Gra rozpoczyna się w punkcie oznaczonym <strong>Start Atakującego</strong>. Zawsze będziesz stąd ruszać.</li>
+            <li><strong>Twój start:</strong> Rozpoczynasz zawsze punkcie oznaczonym <strong>Start Atakującego</strong>.</li>
             <li><strong>Start przeciwnika:</strong> Twój przeciwnik rozpoczyna z punktu <strong>Start Obrońcy</strong>. Jesteś bezpieczny, o ile nie wejdziecie na to samo pole w tym samym kroku.</li>
-            <li><strong>Cele:</strong> W magazynie rozrzucone są cele. Twoim celem jest osiągnięcie wybranego miejsca (nagroda za dotarcie). W grze wykonasz w sumie określoną z góry liczbę kroków. Obrońca przed rozpoczęciem gry przydzielił prawdopodobieństwa ochrony każdego z nich! Będą one wyświetlone na mapie.</li>
+            <li><strong>Cel gry:</strong> Niektore, wyróżnione wierzchołki grafu stanowią <string>Cele</string>. Twoim zadaniem jest wybór jednego z nich i bezpiecznie dotarcie do niego. W takiej sytuacji otrzymasz nagrode. Jeżeli w drodze do Celu zostaniesz złapany przez Obrońcę (tzn. znajdziecie się w tym samym wierzchołku w tym samym kroku gry) otrzymasz karę. Nagrody i kary opisane sa liczbowo w wyróżnionych wierzchołkach - Celach.</li>
+            <li>Obrońca przed rozpoczęciem gry przydzielił prawdopodobieństwa ochrony każdego z Celów! Będą one wyświetlone na mapie gry.</li>
             <li><strong>Prawdopodobieństwa:</strong> Na każdej ścieżce Obrońcy znajduje się wartość % prawdopodobieństwa, że obrońca wybierze właśnie tę ścieżkę. Nie znasz dokładnych ruchów Obrońcy, a jedynie rozkład prawdopodobieństwa jego decyzji. Przeanalizuj zyski i kary oraz szanse powodzenia i wybierz najlepszą według Ciebie drogę do jednego z Celów.</li>
-            <li><strong>Limit czasu:</strong> Na analizę i wykonanie ruchów w scenariuszu masz dokładnie <strong>30 sekund</strong>. Jeżeli nie zdążysz, runda zostaje przerwana.</li>
+            <li>W każdej grze wykonasz określoną z góry liczbę kroków, która jest wyświetlana w panelu informacyjnym (po lewej stronie ekranu).</li>
+            <li><strong>Limit czasu:</strong> Na analizę i wykonanie każdego ruchu masz dokładnie <strong>30-60 sekund</strong> (w zależności od złożoności gry). Jeżeli nie zdążysz, runda zostaje przerwana i przejdziesz do następnej (planszy) gry.</li>
           </ul>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-          <button onClick={onStart} disabled={disabled} className="btn">
+          <input
+            type="text"
+            placeholder="Wpisz swój pseudonim..."
+            value={nickname}
+            onChange={e => setNickname(e.target.value)}
+            style={{ padding: '0.75rem', fontSize: '1.2rem', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', marginBottom: '1rem', width: '80%', maxWidth: '300px', display: 'block', margin: '0 auto 1rem auto', textAlign: 'center' }}
+          />
+          <button onClick={() => onStart(nickname.trim())} disabled={disabled || !nickname.trim()} className="btn">
             {disabled ? 'Wczytywanie gier...' : 'Zobacz instruktaż i zagraj!'}
           </button>
         </div>
@@ -199,7 +226,7 @@ function TutorialScreen({ onFinish }) {
     },
     {
       title: "Twój Ruch",
-      text: "Kiedy rozpoczniesz rozgrywkę i spojrzysz na graf, sąsiadujące dostępne dla Ciebie wierzchołki podświetlą się jasnoniebieską obwódką. Klikaj je, aby przejść do wybranego z nich w kolejnym kroku. Gra kończy się w momencie osiągnięcia celu lub upływu dostępnego czasu (masz na to dokładnie 30 sekund!). \n\nW tym przykładzie możesz osiągnąć Cel A w dwóch krokach, a Cel B w jednym kroku. Obrońca oba cele może osiągnąć w jednym kroku. Cel A jest cenniejszy (+0.90), ale też lepiej broniony (90%), cel B natomiast jest słabiej broniony (10%), mniej cenny (+0.40), ale za to z wysoką karą za bycie złapanym (-0.70). \n\nGra polega na oszacowaniu zysków, strat i prawdopodobieństw. Powodzenia!",
+      text: "Kiedy rozpoczniesz rozgrywkę i spojrzysz na graf, sąsiadujące dostępne dla Ciebie wierzchołki podświetlą się jasnoniebieską obwódką. Klikaj je, aby przejść do wybranego z nich w kolejnym kroku. Gra kończy się w momencie osiągnięcia celu lub upływu dostępnego czasu na dany ruch (30 lub 60 sekund). \n\nW tym przykładzie możesz osiągnąć Cel A w dwóch krokach, a Cel B w jednym kroku. Obrońca oba cele może osiągnąć w jednym kroku. Cel A jest cenniejszy (+0.90), ale też lepiej broniony (90%), cel B natomiast jest słabiej broniony (10%), mniej cenny (+0.40), ale za to z wysoką karą za bycie złapanym (-0.70). \n\nGra polega na oszacowaniu zysków, strat i prawdopodobieństw. Powodzenia!",
       animMode: 'moves'
     }
   ];
@@ -266,18 +293,20 @@ function TutorialScreen({ onFinish }) {
   );
 }
 
-function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFinish }) {
+function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFinish, currentGameIndex, totalGames, totalPayoffs, totalOptimalPayoffs }) {
   const cyRef = useRef(null);
   const containerRef = useRef(null);
   const pathRef = useRef(path);
-  const [timeLeft, setTimeLeft] = useState(30);
+  const isComplex = game ? (game.targets.length >= 7 || game.rounds > 2) : false;
+  const initialTime = isComplex ? 60 : 30;
+  const [timeLeft, setTimeLeft] = useState(initialTime);
 
   useEffect(() => {
     pathRef.current = path;
   }, [path]);
 
   useEffect(() => {
-    setTimeLeft(30);
+    setTimeLeft(initialTime);
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -289,7 +318,7 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [game, onFinish]);
+  }, [game, onFinish, step, initialTime]);
 
   useEffect(() => {
     if (!containerRef.current || !game) return;
@@ -384,8 +413,8 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
       if (isDefenderSpawn) extendedLabel += "\n[Start Obrońcy]";
 
       if (isTarget) {
-        extendedLabel += "\n\n🏆 Nagroda: +" + attackerReward.toFixed(2);
-        extendedLabel += "\n\n🩸 Kara: " + attackerPenalty.toFixed(2);
+        extendedLabel += "\n\n🏆: +" + attackerReward.toFixed(2);
+        extendedLabel += "\n🩸: " + attackerPenalty.toFixed(2);
       }
 
       elements.push({
@@ -481,9 +510,10 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
             'border-width': 4,
             'shape': 'ellipse',
             'background-color': '#047857',
-            'font-size': '18px',
-            'width': 180,
-            'height': 180
+            'font-size': '36px',
+            'width': 260,
+            'height': 260,
+            'text-wrap': 'wrap'
           }
         },
         {
@@ -632,7 +662,8 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
             </div>
           </div>
 
-          <div className="stats-row"><span className="stats-label">Twój Krok:</span><span className="stats-value">{step} / {maxSteps}</span></div>
+          <div className="stats-row"><span className="stats-label">Zadanie:</span><span className="stats-value">{currentGameIndex + 1} / {totalGames}</span></div>
+          <div className="stats-row" style={{ marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}><span className="stats-label">Twój Krok w grze:</span><span className="stats-value">{step} / {maxSteps}</span></div>
 
           <div className="path-box">
             <div style={{ color: 'var(--text-muted)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>Odwiedzone wierzchołki:</div>
@@ -661,35 +692,55 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
   );
 }
 
-function SummaryScreen({ expPayoff, catchProb, onRestart, isTimeout }) {
+function SummaryScreen({ expPayoff, optPayoff, catchProb, totalPayoffs, totalOptimalPayoffs, onRestart, isTimeout }) {
   return (
     <div className="screen-container">
-      <div className="card" style={{ textAlign: 'center' }}>
+      <div className="card" style={{ textAlign: 'center', maxWidth: '800px' }}>
+        <h1 style={{ fontSize: '3rem', marginBottom: '1rem', color: isTimeout ? 'var(--danger)' : 'var(--text-main)' }}>
+          {isTimeout ? "Koniec Czasu ⏳" : "Scenariusz ukończony"}
+        </h1>
 
-        {isTimeout ? (
-          <>
-            <h1 style={{ fontSize: '3rem', marginBottom: '1rem', color: 'var(--danger)' }}>Koniec Czasu ⏳</h1>
-            <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>Niestety, nie zdążyłeś przekraść się do celu w ciągu wymaganych 30 sekund! Twój wynik to 0.</p>
-          </>
-        ) : (
-          <>
-            <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Scenariusz ukończony</h1>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginBottom: '2rem' }}>
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem' }}>
-                <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>Oczekiwana wypłata:</div>
-                <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: expPayoff >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                  {expPayoff > 0 ? "+" : ""}{expPayoff.toFixed(3)}
+        {isTimeout && (
+          <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>
+            Niestety, nie zdążyłeś przekraść się do celu! Twój wynik to 0.
+          </p>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.5rem', borderRadius: '1.25rem' }}>
+            <div style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Twoja {isTimeout ? "wypłata" : "oczekiwana wypłata"}:</div>
+            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: expPayoff >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+              {expPayoff > 0 ? "+" : ""}{expPayoff.toFixed(3)}
+            </div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+              Optymalna wypłata w tej grze: <strong style={{ color: 'var(--text-main)' }}>{optPayoff > 0 ? "+" : ""}{optPayoff.toFixed(3)}</strong>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.5rem', borderRadius: '1.25rem' }}>
+            <div style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Prawdopodobieństwo złapania:</div>
+            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--warning)' }}>
+              {(catchProb * 100).toFixed(1)}%
+            </div>
+          </div>
+
+          <div style={{ gridColumn: 'span 2', background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+              <div>
+                <div style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Twój skumulowany wynik:</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: totalPayoffs >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                  {totalPayoffs > 0 ? "+" : ""}{totalPayoffs.toFixed(3)}
                 </div>
               </div>
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem' }}>
-                <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)' }}>Prawdopodobieństwo złapania:</div>
-                <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: 'var(--warning)' }}>
-                  {(catchProb * 100).toFixed(1)}%
+              <div>
+                <div style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Skumulowany optymalny wynik:</div>
+                <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                  {totalOptimalPayoffs > 0 ? "+" : ""}{totalOptimalPayoffs.toFixed(3)}
                 </div>
               </div>
             </div>
-          </>
-        )}
+          </div>
+        </div>
 
         <button onClick={onRestart} className="btn" style={{ padding: '1.25rem 3rem', fontSize: '1.2rem' }}>Kolejny scenariusz</button>
       </div>
@@ -697,19 +748,120 @@ function SummaryScreen({ expPayoff, catchProb, onRestart, isTimeout }) {
   );
 }
 
-function FinalSummaryScreen({ totalPayoffs, count }) {
-  const average = count > 0 ? (totalPayoffs / count).toFixed(3) : 0;
+function FinalSummaryScreen({ totalPayoffs, totalOptimalPayoffs, count, playerId }) {
+
+  const [leaderboard, setLeaderboard] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Pobieranie tablicy wyników - backend musi obsługiwać GET i zwracać tablicę np: [{"playerId": "Jan", "score": 12.3}, ...]
+    fetch("https://script.google.com/macros/s/AKfycbzARF05A1fgmU14KC4yRRhzFH9Rk3M4LgVK5gxNVubueMh4DP2kveVhB38D9syT1wi3/exec?action=getLeaderboard")
+      .then(r => r.json())
+      .then(data => {
+        let list = Array.isArray(data) ? data : [];
+        // Aktualizujemy wynik gracza na liście lub dodajemy go
+        const existing = list.find(p => p.playerId === playerId);
+        if (existing) {
+          existing.score = totalPayoffs;
+        } else {
+          list.push({ playerId, score: totalPayoffs });
+        }
+        list.sort((a, b) => b.score - a.score);
+        setLeaderboard(list);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Leaderboard fetch error:", err);
+        setLeaderboard([{ playerId, score: totalPayoffs }]);
+        setLoading(false);
+      });
+  }, [totalPayoffs, playerId]);
+
+  const getLeaderboardRows = () => {
+    if (!leaderboard) return [];
+    const playerIndex = leaderboard.findIndex(p => p.playerId === playerId);
+
+    let indicesToShow = new Set();
+    for (let i = 0; i < 3 && i < leaderboard.length; i++) indicesToShow.add(i);
+    for (let i = playerIndex - 3; i <= playerIndex + 3; i++) {
+      if (i >= 0 && i < leaderboard.length) indicesToShow.add(i);
+    }
+
+    let sortedIndices = Array.from(indicesToShow).sort((a, b) => a - b);
+    let rows = [];
+    let lastIdx = -1;
+
+    for (let idx of sortedIndices) {
+      if (lastIdx !== -1 && idx > lastIdx + 1) {
+        rows.push({ type: 'ellipsis', key: 'e' + idx });
+      }
+      rows.push({ type: 'row', rank: idx + 1, ...leaderboard[idx], isCurrent: idx === playerIndex, key: 'r' + idx });
+      lastIdx = idx;
+    }
+    return rows;
+  };
+
   return (
-    <div className="screen-container">
-      <div className="card" style={{ textAlign: 'center', maxWidth: '600px' }}>
+    <div className="screen-container" style={{ padding: '2rem 0' }}>
+      <div className="card" style={{ textAlign: 'center', maxWidth: '800px', width: '90%' }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Eksperyment Zakończony!</h1>
-        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Gratulacje, ukończyłeś wszystkie {count} przygotowanych scenariuszy.</p>
-        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem', margin: '2rem auto' }}>
-          <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Twoja ostateczna średnia oczekiwana wypłata z wszystkich scenariuszy:</div>
-          <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: average >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-            {average > 0 ? "+" : ""}{average}
+        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>Gratulacje {playerId}, ukończyłeś wszystkie {count} przygotowanych scenariuszy.</p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', margin: '2rem 0' }}>
+          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem' }}>
+            <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Twoja ostateczna skumulowana wypłata:</div>
+            <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: totalPayoffs >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+              {totalPayoffs > 0 ? "+" : ""}{totalPayoffs.toFixed(3)}
+            </div>
+          </div>
+          <div style={{ background: 'rgba(0,0,0,0.3)', padding: '2rem', borderRadius: '1.25rem' }}>
+            <div style={{ fontSize: '1.1rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Optymalna skumulowana wypłata:</div>
+            <div style={{ fontSize: '3.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+              {totalOptimalPayoffs > 0 ? "+" : ""}{totalOptimalPayoffs.toFixed(3)}
+            </div>
           </div>
         </div>
+
+        {/* Tabela Rankingowa */}
+        <div style={{ marginTop: '2rem', background: 'rgba(0,0,0,0.4)', borderRadius: '1rem', padding: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Ranking Graczy</h2>
+          {loading ? (
+            <p style={{ color: 'var(--text-muted)' }}>Ładowanie rankingu...</p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '1.1rem' }}>
+              <thead>
+                <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <th style={{ padding: '0.75rem' }}>Miejsce</th>
+                  <th style={{ padding: '0.75rem' }}>Gracz</th>
+                  <th style={{ padding: '0.75rem' }}>Suma wypłat</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getLeaderboardRows().map((row) => {
+                  if (row.type === 'ellipsis') {
+                    return <tr key={row.key}>
+                      <td colSpan="3" style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>...</td>
+                    </tr>;
+                  }
+                  return (
+                    <tr key={row.key} style={{
+                      background: row.isCurrent ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      fontWeight: row.isCurrent ? 'bold' : 'normal',
+                      borderBottom: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                      <td style={{ padding: '0.75rem' }}>{row.rank}</td>
+                      <td style={{ padding: '0.75rem', color: row.isCurrent ? 'var(--text-main)' : '#fff' }}>{row.playerId}</td>
+                      <td style={{ padding: '0.75rem', color: row.score >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                        {row.score > 0 ? '+' : ''}{row.score.toFixed(3)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
         <p style={{ fontSize: '1.1rem', marginTop: '2rem' }}>Dziękujemy bardzo za Twój czas i uczestnictwo w badaniu.</p>
         <p style={{ fontSize: '1.1rem', marginTop: '1rem', color: 'var(--text-muted)' }}>Dane zostały pomyślnie zapisane. Możesz bezpiecznie zamknąć tę stronę.</p>
       </div>
