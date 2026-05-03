@@ -42,10 +42,10 @@ function App() {
     const gameData = await req.json();
 
     const scens = gameData.scenarios || [];
-    const rndScenario = scens.length > 0 ? scens[Math.floor(Math.random() * scens.length)] : null;
+    const chosenScenario = scens.length > 0 ? scens[0] : null;
 
     setCurrentGame(gameData.original_game);
-    setCurrentScenario(rndScenario);
+    setCurrentScenario(chosenScenario);
 
     const spawnId = gameData.original_game.spawn;
     setPath([spawnId]);
@@ -178,18 +178,18 @@ function WelcomeScreen({ onStart, disabled, gamesCount }) {
       <div className="card">
         <h1>Gry Obronne</h1>
         <p>
-          Witaj w eksperymencie. Przed Tobą <strong>{gamesCount}</strong> zadań. Wcielasz się w rolę <strong>Atakującego</strong>, który potajemnie przemieszcza się po polu gry reprezentowanym przez graf. Twoim przeciwnikiem jest <strong>Obrońca</strong>.
+          Witaj w eksperymencie. Przed Tobą <strong>{gamesCount}</strong> zadań. Wcielasz się w rolę <strong>Atakującego</strong>, który potajemnie przemieszcza się po polu gry reprezentowanym w postaci grafu. Twoim przeciwnikiem jest <strong>Obrońca</strong>.
         </p>
 
         <div className="instruction-list">
           <ul>
             <li><strong>Twój start:</strong> Rozpoczynasz zawsze punkcie oznaczonym <strong>Start Atakującego</strong>.</li>
-            <li><strong>Start przeciwnika:</strong> Twój przeciwnik rozpoczyna z punktu <strong>Start Obrońcy</strong>. Jesteś bezpieczny, o ile nie wejdziecie na to samo pole w tym samym kroku.</li>
+            <li><strong>Start przeciwnika:</strong> Twój przeciwnik rozpoczyna z punktu <strong>Start Obrońcy</strong>. Jesteś bezpieczny, o ile nie wejdziecie na to samo pole w tym samym kroku gry.</li>
             <li><strong>Cel gry:</strong> Niektore, wyróżnione wierzchołki grafu stanowią <string>Cele</string>. Twoim zadaniem jest wybór jednego z nich i bezpiecznie dotarcie do niego. W takiej sytuacji otrzymasz nagrode. Jeżeli w drodze do Celu zostaniesz złapany przez Obrońcę (tzn. znajdziecie się w tym samym wierzchołku w tym samym kroku gry) otrzymasz karę. Nagrody i kary opisane sa liczbowo w wyróżnionych wierzchołkach - Celach.</li>
             <li>Obrońca przed rozpoczęciem gry przydzielił prawdopodobieństwa ochrony każdego z Celów! Będą one wyświetlone na mapie gry.</li>
             <li><strong>Prawdopodobieństwa:</strong> Na każdej ścieżce Obrońcy znajduje się wartość % prawdopodobieństwa, że obrońca wybierze właśnie tę ścieżkę. Nie znasz dokładnych ruchów Obrońcy, a jedynie rozkład prawdopodobieństwa jego decyzji. Przeanalizuj zyski i kary oraz szanse powodzenia i wybierz najlepszą według Ciebie drogę do jednego z Celów.</li>
             <li>W każdej grze wykonasz określoną z góry liczbę kroków, która jest wyświetlana w panelu informacyjnym (po lewej stronie ekranu).</li>
-            <li><strong>Limit czasu:</strong> Na analizę i wykonanie każdego ruchu masz dokładnie <strong>30-60 sekund</strong> (w zależności od złożoności gry). Jeżeli nie zdążysz, runda zostaje przerwana i przejdziesz do następnej (planszy) gry.</li>
+            <li><strong>Limit czasu:</strong> Na analizę i wykonanie każdego ruchu masz zawsze <strong>30</strong> lub <strong>60 sekund</strong> (w zależności od złożoności gry). Jeżeli nie zdążysz, runda zostaje przerwana i przejdziesz do następnej (planszy) gry.</li>
           </ul>
         </div>
 
@@ -216,17 +216,17 @@ function TutorialScreen({ onFinish }) {
   const steps = [
     {
       title: "Na czym polega gra?",
-      text: "Jesteś Atakującym - zaczyna w wierzchołku zaznaczonym na pomarańczowo na dole ekranu. Twoim zadaniem jest przekradnięcie się do jednego z zielonych Celów. Przeciwnik (Obrońca) zaczyna u góry.",
+      text: "Jesteś Atakującym - zaczynasz w wierzchołku zaznaczonym na pomarańczowo na dole ekranu. Twoim zadaniem jest dotarcie do jednego z zielonych Celów. Przeciwnik (Obrońca) zaczyna u góry.",
       animMode: 'basics'
     },
     {
       title: "Obrona i Prawdopodobieństwo",
-      text: "Obrońca nie może zatrzymać Cię wszędzie naraz. Ustawił on swoje patrole i ubezpieczył ścieżki do celów z pewnym prawdopodobieństwem. Jeżeli wejdziecie w tym samym kroku na to samo pole, zostajesz złapany (dostajesz karę 🩸), jeśli uda Ci się dotrzeć do celu, który nie jest broniony, zdobywasz nagrodę 🏆 widoczną na grafie.",
+      text: "Obrońca nie ma wystarczających zasobów, żeby w pełni kontrolować wszystkie ścieżki w grafie. Ustawił on swoje patrole i ubezpieczył ścieżki do celów z pewnym prawdopodobieństwem. Jeżeli wejdziecie w tym samym kroku na to samo pole, zostajesz złapany (dostajesz karę 🩸), jeśli uda Ci się dotrzeć do celu (i nie będzie w nim patrolu Obrońcy), zdobywasz nagrodę 🏆 widoczną na grafie.",
       animMode: 'probs'
     },
     {
       title: "Twój Ruch",
-      text: "Kiedy rozpoczniesz rozgrywkę i spojrzysz na graf, sąsiadujące dostępne dla Ciebie wierzchołki podświetlą się jasnoniebieską obwódką. Klikaj je, aby przejść do wybranego z nich w kolejnym kroku. Gra kończy się w momencie osiągnięcia celu lub upływu dostępnego czasu na dany ruch (30 lub 60 sekund). \n\nW tym przykładzie możesz osiągnąć Cel A w dwóch krokach, a Cel B w jednym kroku. Obrońca oba cele może osiągnąć w jednym kroku. Cel A jest cenniejszy (+0.90), ale też lepiej broniony (90%), cel B natomiast jest słabiej broniony (10%), mniej cenny (+0.40), ale za to z wysoką karą za bycie złapanym (-0.70). \n\nGra polega na oszacowaniu zysków, strat i prawdopodobieństw. Powodzenia!",
+      text: "Kiedy rozpoczniesz rozgrywkę i spojrzysz na graf, sąsiadujące dostępne dla Ciebie wierzchołki podświetlą się jasnoniebieską obwódką. Klikaj je, aby przejść do wybranego z nich w kolejnym kroku. Gra kończy się w momencie osiągnięcia celu lub upływu dostępnego czasu na dany ruch (30 lub 60 sekund). \n\nW tym przykładzie możesz osiągnąć Cel A w dwóch krokach (przechodząc w pierwszym kroku do wierzchołka v1), a Cel B w jednym kroku. Obrońca oba cele może osiągnąć w jednym kroku. Cel A jest cenniejszy (+0.90), ale też lepiej broniony (90%), cel B natomiast jest słabiej broniony (10%), mniej cenny (+0.40), ale za to z wyższą karą za bycie złapanym (-0.70 w celu B, -0.5 w celu A). \n\nGra polega na oszacowaniu zysków, strat i prawdopodobieństw oraz wybraniu optymalnej decyzji (ścieżki do celu). Powodzenia!",
       animMode: 'moves'
     }
   ];
