@@ -7,6 +7,7 @@ function App() {
   const [currentGame, setCurrentGame] = useState(null);
   const [currentScenario, setCurrentScenario] = useState(null);
   const [playerId, setPlayerId] = useState('');
+  const [playerEmail, setPlayerEmail] = useState('');
   const [startTime, setStartTime] = useState(null);
 
   const [path, setPath] = useState([]);
@@ -79,6 +80,7 @@ function App() {
   const submitResults = async (finalPath, expP, cProb, elapsedMs) => {
     const payload = {
       playerId,
+      playerEmail,
       gameId: currentGame.id,
       scenarioId: currentScenario ? currentScenario.id : null,
       path: finalPath,
@@ -89,7 +91,7 @@ function App() {
 
     console.log("Wysyłanie wyników do Google Sheets...", payload);
     try {
-      await fetch("https://script.google.com/macros/s/AKfycbzARF05A1fgmU14KC4yRRhzFH9Rk3M4LgVK5gxNVubueMh4DP2kveVhB38D9syT1wi3/exec", {
+      await fetch("https://script.google.com/macros/s/AKfycbxx--uoG7IIqClG93SxyoyhlQuVilN1RwzaBiRfQL-72-t32qsUhP9mOMTt7d-SSzTa/exec", {
         method: "POST",
         mode: "no-cors",
         headers: {
@@ -121,8 +123,9 @@ function App() {
   return (
     <div className="app-container">
       {gameState === 'welcome' && (
-        <WelcomeScreen onStart={(nickname) => {
+        <WelcomeScreen onStart={(nickname, email) => {
           setPlayerId(nickname);
+          setPlayerEmail(email);
           onStartWelcome();
         }} disabled={!gamesList.length} gamesCount={gamesList.length} />
       )}
@@ -172,6 +175,7 @@ function App() {
 
 function WelcomeScreen({ onStart, disabled, gamesCount }) {
   const [nickname, setNickname] = useState('');
+  const [email, setEmail] = useState('');
 
   return (
     <div className="screen-container">
@@ -201,7 +205,14 @@ function WelcomeScreen({ onStart, disabled, gamesCount }) {
             onChange={e => setNickname(e.target.value)}
             style={{ padding: '0.75rem', fontSize: '1.2rem', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', marginBottom: '1rem', width: '80%', maxWidth: '300px', display: 'block', margin: '0 auto 1rem auto', textAlign: 'center' }}
           />
-          <button onClick={() => onStart(nickname.trim())} disabled={disabled || !nickname.trim()} className="btn">
+          <input
+            type="email"
+            placeholder="Adres e-mail (opcjonalnie)"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            style={{ padding: '0.75rem', fontSize: '1.2rem', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', marginBottom: '1rem', width: '80%', maxWidth: '300px', display: 'block', margin: '0 auto 1rem auto', textAlign: 'center' }}
+          />
+          <button onClick={() => onStart(nickname.trim(), email.trim())} disabled={disabled || !nickname.trim()} className="btn">
             {disabled ? 'Wczytywanie gier...' : 'Zobacz instruktaż i zagraj!'}
           </button>
         </div>
@@ -305,20 +316,25 @@ function GameScreen({ game, scenario, path, step, maxSteps, onStepUpdate, onFini
     pathRef.current = path;
   }, [path]);
 
+  const onFinishRef = useRef(onFinish);
+  useEffect(() => {
+    onFinishRef.current = onFinish;
+  }, [onFinish]);
+
   useEffect(() => {
     setTimeLeft(initialTime);
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          onFinish(pathRef.current, 0, 0, true);
+          onFinishRef.current(pathRef.current, 0, 0, true);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [game, onFinish, step, initialTime]);
+  }, [game, initialTime]);
 
   useEffect(() => {
     if (!containerRef.current || !game) return;
@@ -755,7 +771,7 @@ function FinalSummaryScreen({ totalPayoffs, totalOptimalPayoffs, count, playerId
 
   useEffect(() => {
     // Pobieranie tablicy wyników - backend musi obsługiwać GET i zwracać tablicę np: [{"playerId": "Jan", "score": 12.3}, ...]
-    fetch("https://script.google.com/macros/s/AKfycbzARF05A1fgmU14KC4yRRhzFH9Rk3M4LgVK5gxNVubueMh4DP2kveVhB38D9syT1wi3/exec?action=getLeaderboard")
+    fetch("https://script.google.com/macros/s/AKfycbxx--uoG7IIqClG93SxyoyhlQuVilN1RwzaBiRfQL-72-t32qsUhP9mOMTt7d-SSzTa/exec?action=getLeaderboard")
       .then(r => r.json())
       .then(data => {
         let list = Array.isArray(data) ? data : [];
